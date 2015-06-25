@@ -15,17 +15,15 @@
  */
  
 metadata {
-	definition (name: "SmartSense Open/Closed Sensor (Doorbell mode)", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Connected Smoke Alarm", namespace: "smartthings", author: "SmartThings") {
     	capability "Battery"
 		capability "Configuration"
-        capability "Contact Sensor"
-		capability "Button"
-        capability "Polling"
+        //capability "Contact Sensor"
 		capability "Refresh"
 		capability "Temperature Measurement"
+        capability "Smoke Detector"
         
         command "enrollResponse"
-		//command "pushed"
  
 		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300-S"
         fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300"
@@ -41,15 +39,9 @@ metadata {
 	}
  
 	tiles {
-    	/*
-		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
-		}
-		*/
-		standardTile("button", "device.button", width: 2, height: 2) {
-			state "default", label: "Idle", /*action: "pushed", */ icon: "st.Home.home30", backgroundColor: "#B0E0E6"
-            state "pushed", label: "Pressed", icon: "st.Home.home30", backgroundColor: "#53a7c0"
+    	standardTile("smoke", "device.alarmState", width: 2, height: 2) {
+            state("clear", label:'Clear', icon:"st.Home.home2", backgroundColor:"#79b821")
+			state("detected", label:'Smoke', icon:"st.particulate.particulate.particulate", backgroundColor:"#e86d13")
 		}
     	
 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
@@ -72,8 +64,8 @@ metadata {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
  
-		main (["button", "temperature"])
-		details(["button","temperature","battery","refresh"])
+        main (["smoke", "temperature"])
+		details(["smoke","temperature","battery","refresh"])
 	}
 }
  
@@ -103,13 +95,6 @@ def parse(String description) {
         result = cmds?.collect { new physicalgraph.device.HubAction(it) }
     }
     return result
-}
-
-def pushed() {
-
-	//Uncomment the line below to simulate the doorbell being pushed. This is handy for connected app testing.
-	//pushButton()
-    refresh()
 }
  
 private Map parseCatchAllMessage(String description) {
@@ -263,44 +248,29 @@ private Map getTemperatureResult(value) {
 }
 
 private Map getContactResult(value) {
-	log.debug "Contact Status: ${value}"
-	
-	if (value == "closed") {
-		pushButton()
-	}
-	def linkText = getLinkText(device)
-	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
-	return [
-		name: 'contact',
-		value: value,
-		displayed: false
-	]
-}
-
-// "Push" the button when the contact closes
-void pushButton() {
-	log.debug "Pushing button"
-    if (device.currentValue("button") != "pushed") 
+	log.debug 'Contact Status'
+    
+    def val=""
+    def descriptionText=""
+    if (value == "open") 
     {
-		sendEvent( name : "button", value : "pushed", descriptionText: "$device.displayName was pressed", unit : "" )
-		runIn(15, "releaseButton")
-	}
-}
-
-// "Release" the button
-void releaseButton() {
-	log.debug("Releasing button")
-	sendEvent( name : "button", value: "default", descriptionText: "$device.displayName was released")
-}
-
-def poll() {
-	log.debug "state of button is: ${device.currentValue("button")}"
-    sendEvent( name : "button", value: "${device.currentValue("button")}")
+    	val = "detected"
+        descriptionText = "$device.displayName detected smoke"
+    }
+    else if (value == "closed") 
+    {
+    	val = "clear"
+        descriptionText = "$device.displayName smoke is cleared"
+    }
+    return [
+		name: 'smoke',
+		value: val,
+		descriptionText: descriptionText
+	]
 }
 
 def refresh()
 {
-	poll()
 	log.debug "Refreshing Temperature and Battery"
 	[
     
@@ -344,7 +314,6 @@ def enrollResponse() {
         
     ]
 }
-
 private hex(value) {
 	new BigInteger(Math.round(value).toString()).toString(16)
 }
