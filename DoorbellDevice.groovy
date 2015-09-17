@@ -41,12 +41,6 @@ metadata {
 	}
  
 	tiles {
-    	/*
-		standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
-		}
-		*/
 		standardTile("button", "device.button", width: 2, height: 2) {
 			state "default", label: "Idle", icon: "st.Home.home30", backgroundColor: "#B0E0E6"
             state "pushed", label: "Pressed", icon: "st.Home.home30", backgroundColor: "#53a7c0"
@@ -183,11 +177,11 @@ private Map parseIasMessage(String description) {
     Map resultMap = [:]
     switch(msgCode) {
         case '0x0020': // Closed/No Motion/Dry
-        	resultMap = getContactResult('closed')
+        	getContactResult('closed')
             break
 
         case '0x0021': // Open/Motion/Wet
-        	resultMap = getContactResult('open')
+        	getContactResult('open')
             break
 
         case '0x0022': // Tamper Alarm
