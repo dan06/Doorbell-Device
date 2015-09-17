@@ -177,11 +177,11 @@ private Map parseIasMessage(String description) {
     Map resultMap = [:]
     switch(msgCode) {
         case '0x0020': // Closed/No Motion/Dry
-        	getContactResult('closed')
+            pushButton()
             break
 
         case '0x0021': // Open/Motion/Wet
-        	getContactResult('open')
+        	//getContactResult('open')
             break
 
         case '0x0022': // Tamper Alarm
