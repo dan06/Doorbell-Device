@@ -11,17 +11,19 @@
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
+ * 
+ * V 0.1 - 9/16/2015 - Removed all traces of contact sensor events and capabilities
  *
  */
  
 metadata {
-	definition (name: "Connected Smoke Alarm", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "SmartSense Open/Closed Sensor (Doorbell mode)", namespace: "smartthings", author: "SmartThings") {
     	capability "Battery"
 		capability "Configuration"
-        //capability "Contact Sensor"
+		capability "Button"
+        capability "Polling"
 		capability "Refresh"
 		capability "Temperature Measurement"
-        capability "Smoke Detector"
         
         command "enrollResponse"
  
@@ -39,9 +41,15 @@ metadata {
 	}
  
 	tiles {
-    	standardTile("smoke", "device.alarmState", width: 2, height: 2) {
-            state("clear", label:'Clear', icon:"st.Home.home2", backgroundColor:"#79b821")
-			state("detected", label:'Smoke', icon:"st.particulate.particulate.particulate", backgroundColor:"#e86d13")
+    	/*
+		standardTile("contact", "device.contact", width: 2, height: 2) {
+			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
+			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+		}
+		*/
+		standardTile("button", "device.button", width: 2, height: 2) {
+			state "default", label: "Idle", icon: "st.Home.home30", backgroundColor: "#B0E0E6"
+            state "pushed", label: "Pressed", icon: "st.Home.home30", backgroundColor: "#53a7c0"
 		}
     	
 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
@@ -64,8 +72,8 @@ metadata {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
  
-        main (["smoke", "temperature"])
-		details(["smoke","temperature","battery","refresh"])
+		main (["button", "temperature"])
+		details(["button","temperature","battery","refresh"])
 	}
 }
  
@@ -95,6 +103,13 @@ def parse(String description) {
         result = cmds?.collect { new physicalgraph.device.HubAction(it) }
     }
     return result
+}
+
+def pushed() {
+
+	//Uncomment the line below to simulate the doorbell being pushed. This is handy for connected app testing.
+	//pushButton()
+    refresh()
 }
  
 private Map parseCatchAllMessage(String description) {
@@ -248,29 +263,44 @@ private Map getTemperatureResult(value) {
 }
 
 private Map getContactResult(value) {
-	log.debug 'Contact Status'
-    
-    def val=""
-    def descriptionText=""
-    if (value == "open") 
-    {
-    	val = "detected"
-        descriptionText = "$device.displayName detected smoke"
-    }
-    else if (value == "closed") 
-    {
-    	val = "clear"
-        descriptionText = "$device.displayName smoke is cleared"
-    }
-    return [
-		name: 'smoke',
-		value: val,
-		descriptionText: descriptionText
+	log.debug "Contact Status: ${value}"
+	
+	if (value == "closed") {
+		pushButton()
+	}
+	def linkText = getLinkText(device)
+	def descriptionText = "${linkText} was ${value == 'open' ? 'opened' : 'closed'}"
+	return [
+		name: 'contact',
+		value: value,
+		displayed: false
 	]
+}
+
+// "Push" the button when the contact closes
+void pushButton() {
+	log.debug "Pushing button"
+    if (device.currentValue("button") != "pushed") 
+    {
+		sendEvent( name : "button", value : "pushed", descriptionText: "$device.displayName was pressed", unit : "" )
+	}
+    runIn(5, "releaseButton")
+}
+
+// "Release" the button
+void releaseButton() {
+	log.debug("Releasing button")
+	sendEvent( name : "button", value: "default", descriptionText: "$device.displayName was released")
+}
+
+def poll() {
+	log.debug "state of button is: ${device.currentValue("button")}"
+    sendEvent( name : "button", value: "${device.currentValue("button")}")
 }
 
 def refresh()
 {
+	poll()
 	log.debug "Refreshing Temperature and Battery"
 	[
     
@@ -314,6 +344,7 @@ def enrollResponse() {
         
     ]
 }
+
 private hex(value) {
 	new BigInteger(Math.round(value).toString()).toString(16)
 }
