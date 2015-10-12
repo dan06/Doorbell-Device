@@ -19,15 +19,15 @@
 metadata {
 	definition (name: "SmartSense Open/Closed Sensor (Doorbell mode)", namespace: "smartthings", author: "SmartThings") {
     	capability "Battery"
-		capability "Configuration"
-		capability "Button"
+	capability "Configuration"
+	capability "Button"
         capability "Polling"
-		capability "Refresh"
-		capability "Temperature Measurement"
+	capability "Refresh"
+	capability "Temperature Measurement"
         
         command "enrollResponse"
  
-		fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300-S"
+	fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300-S"
         fingerprint inClusters: "0000,0001,0003,0402,0500,0020,0B05", outClusters: "0019", manufacturer: "CentraLite", model: "3300"
 	}
  
@@ -40,10 +40,12 @@ metadata {
 		input "tempOffset", "number", title: "Temperature Offset", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 	}
  
-	tiles {
-		standardTile("button", "device.button", width: 2, height: 2) {
-			state "default", label: "Idle", icon: "st.Home.home30", backgroundColor: "#B0E0E6"
-            state "pushed", label: "Pressed", icon: "st.Home.home30", backgroundColor: "#53a7c0"
+	tiles(scale: 2) {
+		multiAttributeTile(name:"button", , width: 6, height: 4) {
+        		tileAttribute ("device.button", key: "PRIMARY_CONTROL") {
+        			attributeState "default", label: '${name}', icon: "st.Home.home30", backgroundColor: "#B0E0E6"
+                	attributeState "pushed",  label: '${name}', icon: "st.Home.home30", backgroundColor: "#53a7c0"
+            		}
 		}
     	
 		valueTile("temperature", "device.temperature", inactiveLabel: false) {
@@ -62,11 +64,11 @@ metadata {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
         
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+        	standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
  
-		main (["button", "temperature"])
+		main "button"
 		details(["button","temperature","battery","refresh"])
 	}
 }
